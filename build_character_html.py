@@ -97,14 +97,22 @@ def render_table(lines: list[str]) -> str:
         headers, body = rows[0], rows[2:]
     else:
         headers, body = rows[0], rows[1:]
+    is_character_index = len(headers) > 1 and headers[:2] == ["번호", "캐릭터"]
     out = ['<div class="table-wrap"><table><thead><tr>']
     out.extend(f"<th>{inline(cell)}</th>" for cell in headers)
     out.append("</tr></thead><tbody>")
     for row in body:
         out.append("<tr>")
+        number_match = re.fullmatch(r"\s*(\d{3})\s*", row[0]) if is_character_index and row else None
+        character_number = number_match.group(1) if number_match else None
         for index, cell in enumerate(row):
             tag = "th" if index == 0 and len(headers) == 1 else "td"
-            out.append(f"<{tag}>{inline(cell)}</{tag}>")
+            character_link = re.fullmatch(r"\[([^\]]+)\]\(([^)]+)\)", cell)
+            if is_character_index and index == 1 and character_number and character_link:
+                rendered = f'<a href="#char-{character_number}">{inline(character_link.group(1))}</a>'
+            else:
+                rendered = inline(cell)
+            out.append(f"<{tag}>{rendered}</{tag}>")
         out.append("</tr>")
     out.append("</tbody></table></div>")
     return "".join(out)
